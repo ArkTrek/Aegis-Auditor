@@ -90,3 +90,5 @@ By using this software, you agree to only perform scans on domains you own, admi
 **Arpit Ramesan**
 * GitHub: [@ArkTrek](https://github.com/ArkTrek)
 * LinkedIn: [Arpit Ramesan](https://www.linkedin.com/in/arpitramesan/)
+  
+*(Note: Update Privacy Policy and Terms of services as needed. It is currently my own data only.).*
