@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Report: {{ target_url }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #030303;
+            --card-bg: rgba(15, 15, 20, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(6, 182, 212, 0.4);
+            --cyan-neon: #06b6d4;
+            --orange-neon: #f97316;
+            --purple-neon: #a855f7;
+            --text-main: #ededed;
+            --text-muted: #888888;
+            --pass-color: #10b981;
+            --warn-color: #f59e0b;
+            --fail-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .no-print {
+            display: block;
+        }
+
+        .layout-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Top Navigation Header Bar */
+        .top-navbar {
+            background: rgba(5, 5, 7, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .top-navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+                text-align: center;
+            }
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan-neon), var(--purple-neon));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+
+        .logo-text p {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--cyan-neon);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .actions-section {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Outfit', sans-serif;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-3px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan-neon), var(--purple-neon));
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
+        }
+
+        /* Dashboard Frame and Layout */
+        .dashboard-wrapper {
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex-grow: 1;
+        }
+
+        .report-header-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 992px) {
+            .report-header-card {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .report-header-card {
+                padding: 20px;
+            }
+            .target-info h2 {
+                font-size: 1.4rem;
+            }
+            .tab-btn {
+                padding: 10px 14px;
+                font-size: 0.85rem;
+            }
+            .gauges-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .card {
+                padding: 20px;
+                border-radius: 14px;
+            }
+            .checklist-header {
+                padding: 14px 18px;
+                font-size: 0.9rem;
+            }
+            .checklist-body {
+                padding: 18px;
+            }
+            footer {
+                padding: 40px 20px 30px;
+            }
+        }
+
+        .target-info h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+            word-break: break-all;
+        }
+
+        .target-info p {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Tabs Navigation */
+        .tabs-nav {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 20px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.05);
+        }
+
+        /* Tab Content Panel styling */
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* General Card Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+            transition: border-color 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+
+        .card-title i {
+            color: var(--cyan-neon);
+        }
+
+        /* Big Score Gauge Styling */
+        .gauges-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .gauge-card {
+            text-align: center;
+            flex: 1;
+            min-width: 220px;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 25px 15px;
+        }
+
+        .gauge-wrapper {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            margin: 0 auto 15px;
+        }
+
+        .gauge-score {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+        }
+
+        .gauge-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .gauge-grade {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        /* Quick Stats Grid */
+        .stat-badge {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-badge-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .stat-badge-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        .badge-pass {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--pass-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-warn {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warn-color);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .badge-fail {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--fail-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Details list design */
+        .details-list {
+            list-style: none;
+        }
+
+        .details-list li {
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .details-list li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .details-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .details-label span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 4px;
+            max-width: 400px;
+            line-height: 1.4;
+        }
+
+        .details-value {
+            font-size: 0.95rem;
+            text-align: right;
+            max-width: 350px;
+            word-break: break-all;
+        }
+
+        .details-value-mono {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Accordion style checklist */
+        .checklist-item {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.01);
+            transition: border-color 0.2s;
+        }
+
+        .checklist-item:hover {
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .checklist-header {
+            padding: 18px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            font-weight: 600;
+        }
+
+        .checklist-title-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .checklist-icon {
+            font-size: 1.1rem;
+        }
+
+        .checklist-body {
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #d1d1d1;
+        }
+
+        .checklist-body code {
+            background: rgba(255,255,255,0.08);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan-neon);
+        }
+
+        .checklist-body h5 {
+            color: #fff;
+            margin-bottom: 8px;
+            margin-top: 15px;
+            font-weight: 700;
+        }
+
+        /* Mock Social share visual previews */
+        .mock-card {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #151518;
+            max-width: 550px;
+            margin: 0 auto 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .mock-card-img {
+            height: 250px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .mock-card-img-placeholder {
+            background: linear-gradient(135deg, #1f1f23, #2a2a32);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mock-card-content {
+            padding: 15px 20px;
+        }
+
+        .mock-card-domain {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--cyan-neon);
+            margin-bottom: 5px;
+            letter-spacing: 0.05em;
+        }
+
+        .mock-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .mock-card-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            height: 4.5em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030303;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #252528;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--cyan-neon);
+        }
+
+        /* Print formatting */
+        @media print {
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .dashboard-wrapper {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            .card {
+                background: #fff !important;
+                border: 1px solid #ccc !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+                margin-bottom: 20px !important;
+                padding: 20px !important;
+            }
+            .card-title, h2, h3, h4, th, td {
+                color: #000 !important;
+                border-bottom-color: #ccc !important;
+            }
+            .tab-pane {
+                display: block !important; /* show all panes in print */
+                opacity: 1 !important;
+                transform: none !important;
+                margin-bottom: 40px;
+            }
+            .badge {
+                border: 1px solid #000 !important;
+                background: #fff !important;
+                color: #000 !important;
+            }
+            .details-list li {
+                border-bottom-color: #ccc !important;
+            }
+            .checklist-body {
+                display: block !important;
+                background: #fff !important;
+                color: #000 !important;
+                border-top: 1px solid #ccc !important;
+            }
+            canvas {
+                max-width: 100% !important;
+            }
+        }
+
+        /* Footer styling */
+        footer {
+            background: rgba(5, 5, 7, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 60px 40px 40px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            margin-top: 60px;
+        }
+
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media(max-width: 768px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        .footer-col-about h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-col-about p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .developer-bio {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.02);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .developer-avatar-wrapper {
+            flex-shrink: 0;
+        }
+
+        .developer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid var(--cyan-neon);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+
+        .developer-info h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .developer-info p {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan-neon);
+            margin: 2px 0 0 0;
+        }
+
+        .footer-col-links h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        .footer-links-list {
+            list-style: none;
+        }
+
+        .footer-links-list li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links-list a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links-list a:hover {
+            color: var(--cyan-neon);
+            transform: translateX(4px);
+        }
+
+        .architectures-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .arch-card {
+            display: block;
+            text-decoration: none;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: all 0.3s ease;
+        }
+
+        .arch-card:hover {
+            border-color: var(--cyan-neon);
+            background: rgba(6, 182, 212, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .arch-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .arch-title i {
+            font-size: 0.75rem;
+            color: var(--cyan-neon);
+        }
+
+        .arch-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-copyright {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .footer-social-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-social-icons a {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .footer-social-icons a:hover {
+            background: var(--cyan-neon);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="layout-container">
+        <!-- Top Navbar -->
+        <header class="top-navbar no-print">
+            <a href="/" class="logo-section">
+                <div class="logo-mark">A</div>
+                <div class="logo-text">
+                    <h1>Site Auditor</h1>
+                    <p>Security & SEO Engine</p>
+                </div>
+            </a>
+            <div class="actions-section">
+                <a href="/" class="btn btn-back"><i class="fa-solid fa-arrow-left"></i> Scan Another</a>
+                <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Export PDF Report</button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Wrapper -->
+        <div class="dashboard-wrapper">
+            
+            {% if seo_report.error or sec_report.error %}
+                <div class="card" style="text-align: center; border-color: var(--fail-color);">
+                    <div style="font-size: 4rem; color: var(--fail-color); margin-bottom: 20px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h2>Audit Failed to Complete</h2>
+                    <p style="margin: 15px 0; color: var(--text-muted);">
+                        {% if seo_report.error %}{{ seo_report.error }}{% else %}{{ sec_report.error }}{% endif %}
+                    </p>
+                    <a href="/" class="btn btn-primary" style="margin-top: 15px;">Return to Main Page</a>
+                </div>
+            {% else %}
+                
+                <!-- Target Header Card -->
+                <div class="report-header-card">
+                    <div class="target-info">
+                        <h2>{{ target_url }}</h2>
+                        <p><i class="fa-regular fa-clock"></i> Generated: 2026-06-18 • Connection Security & SEO Audit</p>
+                    </div>
+                    <div class="badge badge-pass" style="font-size: 0.9rem; padding: 8px 18px;">
+                        <i class="fa-solid fa-shield-halved"></i> Audit Successful
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation Bar -->
+                <nav class="tabs-nav no-print">
+                    <button class="tab-btn active" onclick="switchTab(event, 'tab-overview')">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard Overview
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-seo')">
+                        <i class="fa-solid fa-magnifying-glass"></i> SEO Performance
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-security')">
+                        <i class="fa-solid fa-user-shield"></i> Security Posture
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-social')">
+                        <i class="fa-solid fa-share-nodes"></i> Social Meta Previews
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-checklist')">
+                        <i class="fa-solid fa-list-check"></i> Fix Recommendations
+                    </button>
+                </nav>
+
+                <!-- TAB 1: OVERVIEW DASHBOARD -->
+                <div id="tab-overview" class="tab-pane active">
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fa-solid fa-gauge-high"></i> Executive Audit Scores
+                        </div>
+                        <div class="gauges-container">
+                            <!-- SEO Score Circle -->
+                            <div class="gauge-card">
+                                <div class="gauge-wrapper">
+                                    <canvas id="seoGaugeCanvas" width="170" height="170"></canvas>
+                                    <div class="gauge-score">{{ seo_report.seo_score }}</div>
+                                </div>
+                                <div class="gauge-label">SEO Audit Score</div>
+                                <div class="gauge-grade" id="seoGradeText">Calculating...</div>
+                            </div>
+                            
+                            <!-- Security Score Circle -->
+                            <div class="gauge-card">
+                                <div class="gauge-wrapper">
+                                    <canvas id="secGaugeCanvas" width="170" height="170"></canvas>
+                                    <div class="gauge-score">{{ sec_report.security_score }}</div>
+                                </div>
+                                <div class="gauge-label">Security Score</div>
+                                <div class="gauge-grade" id="secGradeText">Calculating...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance and Web Vitals Estimates -->
+                    <div class="grid-3" style="margin-bottom: 30px;">
+                        <div class="stat-badge">
+                            <div class="stat-badge-value">{{ seo_report.performance_metrics.response_time_seconds }}s</div>
+                            <div class="stat-badge-label">Response Latency</div>
+                        </div>
+                        <div class="stat-badge">
+                            <div class="stat-badge-value">{{ seo_report.performance_metrics.page_size_kb }} KB</div>
+                            <div class="stat-badge-label">HTML File Size</div>
+                        </div>
+                        <div class="stat-badge">
+                            <div class="stat-badge-value">{{ sec_report.waf.name if sec_report.waf else 'None' }}</div>
+                            <div class="stat-badge-label">WAF Detection</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-bolt"></i> Core Experience Indicators</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">
+                                        Largest Contentful Paint (LCP)
+                                        <span>Estimated visual loading duration of main body text.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        {% if seo_report.performance_metrics.response_time_seconds < 1.0 %}
+                                            <span class="badge badge-pass">Optimal (&lt;2.5s)</span>
+                                        {% elif seo_report.performance_metrics.response_time_seconds < 2.5 %}
+                                            <span class="badge badge-warn">Moderate (~2.3s)</span>
+                                        {% else %}
+                                            <span class="badge badge-fail">Needs Improvement (&gt;2.5s)</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">
+                                        Responsive Layout Viewport
+                                        <span>Indicates if viewport config supports modern mobile displays.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        {% if seo_report.viewport_exists %}
+                                            <span class="badge badge-pass"><i class="fa-solid fa-mobile-screen"></i> Enabled</span>
+                                        {% else %}
+                                            <span class="badge badge-fail"><i class="fa-solid fa-mobile-screen-button"></i> Missing Viewport</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">
+                                        HTTP/HTTPS Redirection
+                                        <span>Force traffic encryption on standard connections.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        {% if sec_report.https_active %}
+                                            <span class="badge badge-pass">Secure HTTPS</span>
+                                        {% else %}
+                                            <span class="badge badge-fail">Plain HTTP (Risky)</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-clipboard-list"></i> Summary Findings</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">SSL Validity</div>
+                                    <div class="details-value">
+                                        {% if sec_report.ssl_details.valid %}
+                                            <span class="badge badge-pass">Active ({{ sec_report.ssl_details.days_left }} Days Left)</span>
+                                        {% else %}
+                                            <span class="badge badge-fail">Invalid / No SSL</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Exposed Server files</div>
+                                    <div class="details-value">
+                                        {% if sec_report.exposed_files %}
+                                            <span class="badge badge-fail">{{ sec_report.exposed_files|length }} Exposed File(s)</span>
+                                        {% else %}
+                                            <span class="badge badge-pass">None Exposed</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Title &amp; Meta Settings</div>
+                                    <div class="details-value">
+                                        {% if seo_report.title.status == 'Good' and seo_report.meta_description.status == 'Good' %}
+                                            <span class="badge badge-pass">Optimized</span>
+                                        {% else %}
+                                            <span class="badge badge-warn">Review Needed</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: SEO PERFORMANCE -->
+                <div id="tab-seo" class="tab-pane">
+                    <div class="grid-2">
+                        <!-- Left Block: Technical and On Page -->
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-circle-info"></i> Page Title &amp; Description</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">
+                                        Title Tag Value
+                                        <span>Length: {{ seo_report.title.length }} characters (Ideal: 10-60)</span>
+                                    </div>
+                                    <div class="details-value">
+                                        <div style="font-weight: 700;">{{ seo_report.title.value if seo_report.title.value else 'Missing' }}</div>
+                                        <div style="margin-top: 5px;">
+                                            <span class="badge {% if seo_report.title.status == 'Good' %}badge-pass{% elif seo_report.title.status == 'Warning' %}badge-warn{% else %}badge-fail{% endif %}">
+                                                {{ seo_report.title.status }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">
+                                        Meta Description
+                                        <span>Length: {{ seo_report.meta_description.length }} characters (Ideal: 50-160)</span>
+                                    </div>
+                                    <div class="details-value">
+                                        <div style="font-size: 0.85rem; max-width: 280px; line-height: 1.4;">{{ seo_report.meta_description.value if seo_report.meta_description.value else 'Missing description meta tag' }}</div>
+                                        <div style="margin-top: 5px;">
+                                            <span class="badge {% if seo_report.meta_description.status == 'Good' %}badge-pass{% elif seo_report.meta_description.status == 'Warning' %}badge-warn{% else %}badge-fail{% endif %}">
+                                                {{ seo_report.meta_description.status }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Canonical URL Tag</div>
+                                    <div class="details-value">
+                                        <div class="details-value-mono">{{ seo_report.canonical.value if seo_report.canonical.value else 'Missing' }}</div>
+                                        <div style="margin-top:5px;">
+                                            {% if seo_report.canonical.status == 'Good' %}
+                                                {% if seo_report.canonical.matches %}
+                                                    <span class="badge badge-pass">Canonical Matches URL</span>
+                                                {% else %}
+                                                    <span class="badge badge-warn">Non-Self-Referential</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge badge-fail">Missing Canonical</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Right Block: Crawlability & Indexability -->
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-spider"></i> Crawlability &amp; Files</div>
+                            <ul class="details-list">
+                                <li style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                        <div class="details-label">
+                                            Robots.txt Presence
+                                            <span>Checks if robots.txt is retrievable at host base.</span>
+                                        </div>
+                                        <div class="details-value">
+                                            {% if seo_report.files.robots_exists %}
+                                                <span class="badge badge-pass">Found</span>
+                                            {% else %}
+                                                <span class="badge badge-fail">Missing</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if seo_report.files.robots_exists and seo_report.files.robots_details %}
+                                        <div style="width: 100%; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-top: 5px;">
+                                            <div><strong>Disallow count:</strong> {{ seo_report.files.robots_details.disallow_count }} rules</div>
+                                            {% if seo_report.files.robots_details.sitemaps_declared %}
+                                                <div style="margin-top: 5px;">
+                                                    <strong>Declared Sitemaps:</strong>
+                                                    <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; font-family: 'Space Mono', monospace; font-size: 0.75rem;">
+                                                        {% for s in seo_report.files.robots_details.sitemaps_declared %}
+                                                            <a href="{{ s }}" target="_blank" style="color: var(--cyan-neon); word-break: break-all;">{{ s }} ↗</a>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            <div style="margin-top: 8px;">
+                                                <strong>File Content Preview:</strong>
+                                                <pre style="font-family: 'Space Mono', monospace; font-size: 0.75rem; color: #bbb; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; overflow-x: auto; margin-top: 4px; white-space: pre-wrap;">{{ seo_report.files.robots_details.content_preview }}</pre>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </li>
+                                <li style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                        <div class="details-label">
+                                            Sitemap.xml Presence
+                                            <span>Checks if sitemap is present at the standard endpoint.</span>
+                                        </div>
+                                        <div class="details-value">
+                                            {% if seo_report.files.sitemap_exists %}
+                                                <span class="badge badge-pass">Found</span>
+                                            {% else %}
+                                                <span class="badge badge-fail">Missing / Unresolved</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if seo_report.files.sitemap_exists and seo_report.files.sitemap_details %}
+                                        <div style="width: 100%; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-top: 5px;">
+                                            <div><strong>Sitemap Type:</strong> {{ seo_report.files.sitemap_details.type }}</div>
+                                            <div style="margin-top: 4px;"><strong>URLs Listed:</strong> {{ seo_report.files.sitemap_details.url_count }} URLs</div>
+                                            <div style="margin-top: 6px;"><a href="{{ seo_report.files.sitemap_url }}" target="_blank" style="color: var(--cyan-neon); text-decoration: underline;">Open Sitemap File ↗</a></div>
+                                        </div>
+                                    {% endif %}
+                                </li>
+                                <li>
+                                    <div class="details-label">
+                                        Search Engine Index Policy
+                                        <span>Checking meta tags/headers for indexing restrictions.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        {% if seo_report.index_status.noindex %}
+                                            <span class="badge badge-fail">Blocked (noindex)</span>
+                                            <div style="color:var(--fail-color); font-size:0.8rem; margin-top:4px;">{{ seo_report.index_status.reasons[0] }}</div>
+                                        {% else %}
+                                            <span class="badge badge-pass">Indexable</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Heading Hierarchy -->
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-list-ol"></i> Headings Hierarchy</div>
+                            <div style="height: 200px; max-width: 100%; margin-bottom: 25px;">
+                                <canvas id="headingsChart"></canvas>
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+                                {% if seo_report.headings.counts.h1 == 0 %}
+                                    <p style="color: var(--fail-color); font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Critical: Missing an H1 tag. Your page needs a single H1 header tag to introduce main page content.</p>
+                                {% elif seo_report.headings.counts.h1 > 1 %}
+                                    <p style="color: var(--warn-color); font-weight:700;"><i class="fa-solid fa-triangle-exclamation"></i> Warning: Multiple H1 tags ({{ seo_report.headings.counts.h1 }} found). Best practice is one per page.</p>
+                                {% else %}
+                                    <p style="color: var(--pass-color);"><i class="fa-regular fa-circle-check"></i> Structured properly with exactly one H1 tag.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-indent"></i> Document H1-H3 Outline</div>
+                            <div style="max-height: 250px; overflow-y: auto; padding-right: 10px;">
+                                {% if seo_report.headings.h1 or seo_report.headings.h2 or seo_report.headings.h3 %}
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px;">
+                                        {% for h1 in seo_report.headings.h1 %}
+                                            <div style="padding-left: 0; color: #fff; font-weight:800; border-left: 2px solid var(--cyan-neon); padding-left: 8px;">H1: {{ h1 }}</div>
+                                        {% endfor %}
+                                        {% for h2 in seo_report.headings.h2 %}
+                                            <div style="padding-left: 15px; color: var(--text-main); border-left: 2px dashed rgba(255,255,255,0.2); padding-left: 8px; margin-left: 15px;">H2: {{ h2 }}</div>
+                                        {% endfor %}
+                                        {% for h3 in seo_report.headings.h3 %}
+                                            <div style="padding-left: 30px; color: var(--text-muted); border-left: 1px dotted rgba(255,255,255,0.1); padding-left: 8px; margin-left: 30px;">H3: {{ h3 }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p style="color: var(--text-muted); text-align: center; margin-top: 50px;">No headings outline found (H1-H3 absent).</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Images Audit and Link Equity -->
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title"><i class="fa-regular fa-image"></i> Images Audit</div>
+                            <ul class="details-list" style="margin-bottom: 25px;">
+                                <li>
+                                    <div class="details-label">Total Document Images</div>
+                                    <div class="details-value">{{ seo_report.images.total }}</div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Missing Alternative Text (ALT)</div>
+                                    <div class="details-value">
+                                        <span class="badge {% if seo_report.images.missing_alt > 0 %}badge-fail{% else %}badge-pass{% endif %}">
+                                            {{ seo_report.images.missing_alt }} missing
+                                        </span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Modern Formats (WebP, AVIF)</div>
+                                    <div class="details-value">
+                                        {{ seo_report.images.modern_format_count }} out of {{ seo_report.images.total }} images
+                                    </div>
+                                </li>
+                            </ul>
+                            {% if seo_report.images.list %}
+                                <div style="font-weight:700; font-size:0.9rem; margin-bottom:12px; display: flex; justify-content: space-between;">
+                                    <span>Scanned Images Alt Details (Up to 30):</span>
+                                    <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: normal;">Green: Pass, Yellow: Fail</span>
+                                </div>
+                                <div style="max-height: 220px; overflow-y: auto; padding-right:5px; font-family: 'Space Mono', monospace; font-size:0.75rem; display:flex; flex-direction:column; gap:8px;">
+                                    {% for img in seo_report.images.list %}
+                                        <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); display:flex; flex-direction:column; gap:5px;">
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <span style="color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:280px;" title="{{ img.src }}">{{ img.src if img.src else '[No Source]' }}</span>
+                                                <span class="badge {% if img.is_modern %}badge-pass{% else %}badge-warn{% endif %}" style="font-size: 0.65rem; padding: 2px 6px;">
+                                                    {% if img.is_modern %}WebP/AVIF{% else %}Legacy{% endif %}
+                                                </span>
+                                            </div>
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <strong>Alt Text:</strong>
+                                                {% if img.has_alt %}
+                                                    <span style="color: var(--pass-color); font-weight: bold; border-left: 2px solid var(--pass-color); padding-left: 6px;">"{{ img.alt }}"</span>
+                                                {% else %}
+                                                    <span style="color: var(--warn-color); font-weight: bold; font-style: italic;">[MISSING ALT ATTRIBUTE]</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-link"></i> Link Equity &amp; Hierarchy</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">Total Found Links</div>
+                                    <div class="details-value">{{ seo_report.links.total }}</div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Internal Navigation Links</div>
+                                    <div class="details-value">{{ seo_report.links.internal_count }} links</div>
+                                </li>
+                                <li>
+                                    <div class="details-label">External Referrals</div>
+                                    <div class="details-value">{{ seo_report.links.external_count }} links</div>
+                                </li>
+                            </ul>
+                            <div style="margin-top: 20px;">
+                                <div style="font-weight:700; font-size:0.9rem; margin-bottom:10px;">First 10 Links Extracted:</div>
+                                <div style="max-height: 130px; overflow-y: auto; padding-right:5px; font-family: 'Space Mono', monospace; font-size:0.75rem; display:flex; flex-direction:column; gap:8px;">
+                                    {% for link in seo_report.links.list[:10] %}
+                                        <div style="background:rgba(255,255,255,0.02); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; gap:15px;">
+                                            <span style="color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">{{ link.text }}</span>
+                                            <a href="{{ link.url }}" target="_blank" style="color:var(--cyan-neon); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:250px;">{{ link.url }}</a>
+                                            <span style="color:var(--text-muted);">{% if link.internal %}INT{% else %}EXT{% endif %}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Keyword Density and Text Metrics -->
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Top Keywords Density</div>
+                            <div style="height: 220px; max-width:100%;">
+                                <canvas id="keywordsChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-paragraph"></i> Readability Metrics</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">Body Text Word Count</div>
+                                    <div class="details-value">{{ seo_report.performance_metrics.word_count }} words</div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Estimated Reading Time</div>
+                                    <div class="details-value">{{ seo_report.performance_metrics.reading_time_minutes }} minutes</div>
+                                </li>
+                                <li>
+                                    <div class="details-label">SEO Word Count Status</div>
+                                    <div class="details-value">
+                                        {% if seo_report.performance_metrics.word_count >= 300 %}
+                                            <span class="badge badge-pass">Sufficient Content</span>
+                                        {% else %}
+                                            <span class="badge badge-warn">Thin Content (&lt;300 words)</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SECURITY POSTURE -->
+                <div id="tab-security" class="tab-pane">
+                    <div class="grid-2">
+                        <!-- Left Block: SSL Connection details -->
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-lock"></i> SSL Certificate Authority</div>
+                            {% if sec_report.ssl_details.valid %}
+                                <ul class="details-list">
+                                    <li>
+                                        <div class="details-label">Valid SSL Certificate</div>
+                                        <div class="details-value"><span class="badge badge-pass">Secure</span></div>
+                                    </li>
+                                    <li>
+                                        <div class="details-label">Common Issuer CN</div>
+                                        <div class="details-value">{{ sec_report.ssl_details.issuer }}</div>
+                                    </li>
+                                    <li>
+                                        <div class="details-label">Issued Subject CN</div>
+                                        <div class="details-value">{{ sec_report.ssl_details.subject }}</div>
+                                    </li>
+                                    <li>
+                                        <div class="details-label">Certificate Expiration</div>
+                                        <div class="details-value font-mono">{{ sec_report.ssl_details.expiry }}</div>
+                                    </li>
+                                    <li>
+                                        <div class="details-label">Remaining Duration</div>
+                                        <div class="details-value font-mono">{{ sec_report.ssl_details.days_left }} Days</div>
+                                    </li>
+                                    <li>
+                                        <div class="details-label">Connection Layer Details</div>
+                                        <div class="details-value font-mono" style="font-size:0.75rem;">{{ sec_report.ssl_details.version }} / {{ sec_report.ssl_details.cipher }}</div>
+                                    </li>
+                                </ul>
+                            {% else %}
+                                <div style="text-align: center; padding: 40px 0;">
+                                    <div style="font-size: 3rem; color: var(--fail-color); margin-bottom: 15px;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <h3>No Valid Certificate Resolved</h3>
+                                    <p style="color:var(--text-muted); font-size:0.9rem; margin-top:5px;">{{ sec_report.ssl_details.error if sec_report.ssl_details else 'No secure handshake possible' }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Right Block: HTTP Security Headers analysis -->
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-shield-halved"></i> Header Security Strengths</div>
+                            <div style="width: 100%; max-width: 330px; margin: 0 auto 20px;">
+                                <canvas id="securityHeadersChart"></canvas>
+                            </div>
+                            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.4; text-align:center;">
+                                Radar map indicates security instruction weights declared by HTTP headers.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Headers Check grid -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-server"></i> HTTP Security Headers Checklist</div>
+                        <ul class="details-list">
+                            {% for header, found in sec_report.headers_found.items() %}
+                                <li style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                        <div class="details-label" style="font-weight: 700;">
+                                            <code>{{ header }}</code>
+                                        </div>
+                                        <div class="details-value">
+                                            {% if found %}
+                                                <span class="badge badge-pass"><i class="fa-solid fa-check"></i> Enabled</span>
+                                            {% else %}
+                                                <span class="badge badge-fail"><i class="fa-solid fa-xmark"></i> Missing</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; width: 100%;">
+                                        {% if header == 'Strict-Transport-Security' %}Forces client browser to only make secure HTTPS connection transactions.
+                                        {% elif header == 'Content-Security-Policy' %}Controls permitted domains scripts/resources load, defending XSS attempts.
+                                        {% elif header == 'X-Frame-Options' %}Prevents clickjacking framing overrides from external websites.
+                                        {% elif header == 'X-Content-Type-Options' %}Restricts browser mime-sniffing behavior.
+                                        {% elif header == 'Referrer-Policy' %}Instructs browser which referrer metadata is shared on external links.
+                                        {% elif header == 'Permissions-Policy' %}Enables/disables specific web browser APIs (camera, geolocation, etc).
+                                        {% elif header == 'X-XSS-Protection' %}Enables browser client built-in anti-cross-site scripting filters.{% endif %}
+                                    </div>
+                                    {% if found and sec_report.header_values and sec_report.header_values[header] %}
+                                        <div style="width: 100%; margin-top: 5px; font-family: 'Space Mono', monospace; font-size: 0.8rem; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 6px; word-break: break-all; color: var(--cyan-neon);">
+                                            <strong>Value:</strong> {{ sec_report.header_values[header] }}
+                                        </div>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- Cookie Security and Information Disclosure -->
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-cookie"></i> Active Session Cookie Security</div>
+                            {% if sec_report.cookies %}
+                                <div style="max-height: 250px; overflow-y: auto; padding-right:5px; display:flex; flex-direction:column; gap:10px;">
+                                    {% for cookie in sec_report.cookies %}
+                                        <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:10px; padding:15px;">
+                                            <div style="font-family:'Space Mono', monospace; font-weight:700; font-size:0.9rem; color:#fff; word-break:break-all;">{{ cookie.name }}</div>
+                                            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                                                <span class="badge {% if cookie.secure %}badge-pass{% else %}badge-fail{% endif %}" style="font-size:0.7rem;">Secure</span>
+                                                <span class="badge {% if cookie.httponly %}badge-pass{% else %}badge-fail{% endif %}" style="font-size:0.7rem;">HttpOnly</span>
+                                                <span class="badge {% if cookie.samesite %}badge-pass{% else %}badge-warn{% endif %}" style="font-size:0.7rem;">
+                                                    SameSite: {{ cookie.samesite if cookie.samesite else 'None' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p style="color:var(--text-muted); text-align:center; padding: 40px 0;">No Set-Cookie instructions captured in response.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fa-solid fa-circle-exclamation"></i> Server Signature Disclosure</div>
+                            <ul class="details-list">
+                                <li>
+                                    <div class="details-label">
+                                        Server Header Value
+                                        <span>Exposes raw host server signatures to requests.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        <div class="details-value-mono">{{ sec_report.server_info.server_header if sec_report.server_info.server_header else 'Protected / Hidden' }}</div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">
+                                        X-Powered-By Header Value
+                                        <span>Exposes underlying technology framework indicators.</span>
+                                    </div>
+                                    <div class="details-value">
+                                        <div class="details-value-mono">{{ sec_report.server_info.powered_by_header if sec_report.server_info.powered_by_header else 'Protected / Hidden' }}</div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="details-label">Signature Leak Status</div>
+                                    <div class="details-value">
+                                        {% if sec_report.server_info.disclosed %}
+                                            <span class="badge badge-warn">Disclosed</span>
+                                        {% else %}
+                                            <span class="badge badge-pass">Protected</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Exposed Sensitive Files check results -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-folder-open"></i> Exposed Sensitive Files &amp; Archives</div>
+                        {% if sec_report.exposed_files %}
+                            <div style="background:rgba(239, 68, 68, 0.05); border:1px solid rgba(239, 68, 68, 0.2); border-radius:12px; padding:20px; color:#fff; margin-bottom:20px;">
+                                <h4 style="color:var(--fail-color); margin-bottom:10px;"><i class="fa-solid fa-triangle-exclamation"></i> Critical Vulnerabilities Found</h4>
+                                <p style="font-size:0.9rem; color:var(--text-muted); line-height:1.5;">Attackers can view sensitive configurations and environment settings directly on these paths.</p>
+                            </div>
+                            <ul class="details-list">
+                                {% for item in sec_report.exposed_files %}
+                                    <li>
+                                        <div class="details-label">
+                                            <span style="color:var(--fail-color); font-weight:700; font-family:'Space Mono', monospace;">{{ item.file }}</span>
+                                            <span>{{ item.description }}</span>
+                                        </div>
+                                        <div class="details-value">
+                                            <a href="{{ item.url }}" target="_blank" style="color:var(--fail-color); text-decoration:underline;">Inspect Exposed Path ↗</a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div style="text-align:center; padding: 40px 0; border:1px dashed var(--border-color); border-radius:12px; background:rgba(16,185,129,0.01);">
+                                <div style="font-size: 2.5rem; color: var(--pass-color); margin-bottom: 12px;">
+                                    <i class="fa-regular fa-circle-check"></i>
+                                </div>
+                                <h4>No Exposed System Configurations Found</h4>
+                                <p style="color:var(--text-muted); font-size:0.85rem; margin-top:5px;">System configurations (.env, .git, and CMS config paths) are securely blocked from public requests.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- TAB 4: SOCIAL META CARD PREVIEWS -->
+                <div id="tab-social" class="tab-pane">
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-share-nodes"></i> Share Previews Mock</div>
+                        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:30px; line-height:1.5;">This shows how your page metadata renders when published on social hubs. Missing tags result in blank panels.</p>
+                        
+                        <div class="grid-2">
+                            <!-- LinkedIn Mock Card -->
+                            <div>
+                                <h3 style="font-size:1rem; font-weight:700; color:#fff; text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">LinkedIn Card Preview</h3>
+                                <div class="mock-card">
+                                    {% if seo_report.social_metadata.og_image %}
+                                        <div class="mock-card-img" style="background-image: url('{{ seo_report.social_metadata.og_image }}')"></div>
+                                    {% else %}
+                                        <div class="mock-card-img mock-card-img-placeholder">
+                                            <i class="fa-regular fa-image" style="margin-right:8px;"></i> No og:image detected
+                                        </div>
+                                    {% endif %}
+                                    <div class="mock-card-content">
+                                        <div class="mock-card-domain">{{ target_url }}</div>
+                                        <div class="mock-card-title">{{ seo_report.social_metadata.og_title if seo_report.social_metadata.og_title else seo_report.title.value if seo_report.title.value else 'No OG Title Specified' }}</div>
+                                        <div class="mock-card-desc">{{ seo_report.social_metadata.og_description if seo_report.social_metadata.og_description else seo_report.meta_description.value if seo_report.meta_description.value else 'Add og:description to control the text shown here on social platforms.' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Twitter/X Mock Card -->
+                            <div>
+                                <h3 style="font-size:1rem; font-weight:700; color:#fff; text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Twitter/X Card Preview</h3>
+                                <div class="mock-card">
+                                    {% if seo_report.social_metadata.twitter_image %}
+                                        <div class="mock-card-img" style="background-image: url('{{ seo_report.social_metadata.twitter_image }}')"></div>
+                                    {% elif seo_report.social_metadata.og_image %}
+                                        <div class="mock-card-img" style="background-image: url('{{ seo_report.social_metadata.og_image }}')"></div>
+                                    {% else %}
+                                        <div class="mock-card-img mock-card-img-placeholder">
+                                            <i class="fa-regular fa-image" style="margin-right:8px;"></i> No Twitter Image detected
+                                        </div>
+                                    {% endif %}
+                                    <div class="mock-card-content">
+                                        <div class="mock-card-domain"><i class="fa-brands fa-x-twitter"></i> {{ target_url }}</div>
+                                        <div class="mock-card-title">{{ seo_report.social_metadata.twitter_title if seo_report.social_metadata.twitter_title else seo_report.title.value if seo_report.title.value else 'No Twitter Title' }}</div>
+                                        <div class="mock-card-desc">{{ seo_report.social_metadata.twitter_description if seo_report.social_metadata.twitter_description else seo_report.meta_description.value if seo_report.meta_description.value else 'Add twitter:description to control snippet layout on X streams.' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Extracted raw social properties table -->
+                        <div style="margin-top:40px;">
+                            <div style="font-weight:700; font-size:1rem; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">Raw Social Metadata Properties</div>
+                            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.9rem;">
+                                <thead>
+                                    <tr style="border-bottom:1.5px solid rgba(255,255,255,0.1); color:#fff; font-weight:700;">
+                                        <th style="padding:12px 10px;">Property</th>
+                                        <th style="padding:12px 10px;">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for k, v in seo_report.social_metadata.items() %}
+                                        {% if k != 'has_social' and v %}
+                                            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                                                <td style="padding:12px 10px; font-family:'Space Mono', monospace; font-weight:700; color:var(--cyan-neon);">{% if k.startswith('og_') %}og:{{ k[3:] }}{% else %}twitter:{{ k[8:] }}{% endif %}</td>
+                                                <td style="padding:12px 10px; color:var(--text-main); word-break:break-all;">{{ v }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: ACTION RECOMMENDATIONS -->
+                <div id="tab-checklist" class="tab-pane">
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-list-check"></i> Action Recommendations</div>
+                        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:30px; line-height:1.5;">We compiled the scans to yield prioritized fixing guides. Click any recommendation item to inspect details and instructions.</p>
+                        
+                        <div id="recommendations-accordion">
+                            <!-- JS will dynamically populate the checklist based on reports -->
+                        </div>
+                    </div>
+                </div>
+
+            {% endif %}
+        </div>
+
+        <!-- Footnote Branding Footer -->
+        <footer>
+            <div class="footer-grid no-print">
+                <div class="footer-col-about">
+                    <h3>About The Engineer</h3>
+                    <p>Designed and built as a professional security-SEO hybrid suite by Arpit Ramesan. Combining Generative AI systems integration and backend design.</p>
+                    
+                    <div class="developer-bio">
+                        <div class="developer-avatar-wrapper">
+                            <div class="developer-avatar" style="background: linear-gradient(135deg, var(--cyan-neon), var(--purple-neon)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.2rem;">AR</div>
+                        </div>
+                        <div class="developer-info">
+                            <h4>Arpit Ramesan</h4>
+                            <p>AI Generalist & Orchestrator</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-col-links">
+                    <h3>Systems & Archives</h3>
+                    <ul class="footer-links-list">
+                        <li><a href="https://arpitramesansportfolio.pythonanywhere.com/" target="_blank"><i class="fa-solid fa-user-tie"></i> Developer Portfolio</a></li>
+                        <li><a href="https://github.com/arktrek" target="_blank"><i class="fa-brands fa-github"></i> GitHub Profile</a></li>
+                        <li><a href="https://www.linkedin.com/in/arpitramesan" target="_blank"><i class="fa-brands fa-linkedin"></i> LinkedIn Network</a></li>
+                        <li><a href="/privacy"><i class="fa-solid fa-user-lock"></i> Privacy Policy</a></li>
+                        <li><a href="/terms"><i class="fa-solid fa-file-invoice"></i> Terms of Service</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col-links">
+                    <h3>Other Live Architectures</h3>
+                    <div class="architectures-grid">
+                        <a href="https://armaps.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Geo Maps (Armaps) <i class="fa-solid fa-location-arrow"></i></div>
+                            <div class="arch-desc">Safety-first navigation routing interface.</div>
+                        </a>
+                        <a href="https://pin3pin.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Secure File Transfer <i class="fa-solid fa-share-nodes"></i></div>
+                            <div class="arch-desc">Secure P2P file-sharing protocol platform.</div>
+                        </a>
+                        <a href="https://studiobeyond.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Studio Beyond <i class="fa-solid fa-film"></i></div>
+                            <div class="arch-desc">Malayalam anime dubbing project base.</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    &copy; 2026 Arpit Ramesan. All intellectual rights reserved.
+                </div>
+                <div class="footer-social-icons">
+                    <a href="https://github.com/arktrek" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/arpitramesan" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="mailto:arpitramesan777@gmail.com" title="Email"><i class="fa-solid fa-envelope"></i></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JS Handling Charts, Tabs, and Checklist Generator -->
+    {% if not seo_report.error and not sec_report.error %}
+    <script>
+        // Tab switching
+        function switchTab(evt, tabId) {
+            // Remove active classes
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+            // Set active state
+            if(evt) {
+                evt.currentTarget.classList.add('active');
+            } else {
+                document.querySelector(`[onclick*="${tabId}"]`).classList.add('active');
+            }
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Draw custom arc score gauges using HTML5 canvas
+        function drawScoreArc(canvasId, score, colorClass) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = 170 * dpr;
+            canvas.height = 170 * dpr;
+            canvas.style.width = '170px';
+            canvas.style.height = '170px';
+            ctx.scale(dpr, dpr);
+
+            const x = 85;
+            const y = 85;
+            const r = 70;
+            const startAngle = 0.75 * Math.PI;
+            const endAngle = 2.25 * Math.PI;
+
+            // Draw track
+            ctx.beginPath();
+            ctx.arc(x, y, r, startAngle, endAngle);
+            ctx.strokeStyle = '#1e1e23';
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Draw progress
+            const progress = score / 100;
+            const currentAngle = startAngle + progress * (endAngle - startAngle);
+            ctx.beginPath();
+            ctx.arc(x, y, r, startAngle, currentAngle);
+            
+            // Choose color matching class
+            let color = '#06b6d4'; // cyan
+            if(score < 50) color = '#ef4444'; // red
+            else if(score < 80) color = '#f59e0b'; // yellow
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            ctx.stroke();
+        }
+
+        // Calculate Grades
+        function getGrade(score) {
+            if(score >= 90) return { text: 'A+ OUTSTANDING', color: 'var(--pass-color)' };
+            if(score >= 80) return { text: 'A EXCELLENT', color: 'var(--pass-color)' };
+            if(score >= 70) return { text: 'B GOOD', color: 'var(--warn-color)' };
+            if(score >= 50) return { text: 'C WARNING', color: 'var(--warn-color)' };
+            return { text: 'F CRITICAL RISK', color: 'var(--fail-color)' };
+        }
+
+        const seoScore = {{ seo_report.seo_score }};
+        const secScore = {{ sec_report.security_score }};
+
+        // Initialize score indicators
+        drawScoreArc('seoGaugeCanvas', seoScore);
+        drawScoreArc('secGaugeCanvas', secScore);
+
+        const seoGrade = getGrade(seoScore);
+        const secGrade = getGrade(secScore);
+
+        const seoTextEl = document.getElementById('seoGradeText');
+        seoTextEl.innerText = seoGrade.text;
+        seoTextEl.style.color = seoGrade.color;
+
+        const secTextEl = document.getElementById('secGradeText');
+        secTextEl.innerText = secGrade.text;
+        secTextEl.style.color = secGrade.color;
+
+        // Render charts once DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Chart 1: Headings outline structure Bar
+            const headingsCtx = document.getElementById('headingsChart').getContext('2d');
+            new Chart(headingsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'],
+                    datasets: [{
+                        label: 'Tag Frequency',
+                        data: [
+                            {{ seo_report.headings.counts.h1 }},
+                            {{ seo_report.headings.counts.h2 }},
+                            {{ seo_report.headings.counts.h3 }},
+                            {{ seo_report.headings.counts.h4 }},
+                            {{ seo_report.headings.counts.h5 }},
+                            {{ seo_report.headings.counts.h6 }}
+                        ],
+                        backgroundColor: 'rgba(6, 182, 212, 0.4)',
+                        borderColor: '#06b6d4',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 1, color: '#888' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: { 
+                            ticks: { color: '#888' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Security Headers radar
+            const hsts = {{ '100' if sec_report.headers_found['Strict-Transport-Security'] else '0' }};
+            const csp = {{ '100' if sec_report.headers_found['Content-Security-Policy'] else '0' }};
+            const xframe = {{ '100' if sec_report.headers_found['X-Frame-Options'] else '0' }};
+            const xcontent = {{ '100' if sec_report.headers_found['X-Content-Type-Options'] else '0' }};
+            const referrer = {{ '100' if sec_report.headers_found['Referrer-Policy'] else '0' }};
+            const permissions = {{ '100' if sec_report.headers_found['Permissions-Policy'] else '0' }};
+
+            const secHeadersCtx = document.getElementById('securityHeadersChart').getContext('2d');
+            new Chart(secHeadersCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['HSTS', 'CSP', 'X-Frame', 'X-Content', 'Referrer', 'Permissions'],
+                    datasets: [{
+                        label: 'Declared Configuration Weight',
+                        data: [hsts, csp, xframe, xcontent, referrer, permissions],
+                        backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                        borderColor: '#a855f7',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#a855f7'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255,255,255,0.05)' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            pointLabels: { color: '#888', font: { family: 'Outfit', size: 10 } },
+                            ticks: { display: false },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+
+            // Chart 3: Keywords density analysis
+            const keywordsLabels = [];
+            const keywordsData = [];
+            {% for item in seo_report.keyword_density %}
+                keywordsLabels.push('{{ item.keyword }}');
+                keywordsData.push({{ item.count }});
+            {% endfor %}
+
+            const keywordsCtx = document.getElementById('keywordsChart').getContext('2d');
+            new Chart(keywordsCtx, {
+                type: 'bar',
+                data: {
+                    labels: keywordsLabels,
+                    datasets: [{
+                        label: 'Occurrences',
+                        data: keywordsData,
+                        backgroundColor: 'rgba(249, 115, 22, 0.4)',
+                        borderColor: '#f97316',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            ticks: { color: '#888', stepSize: 2 },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: { 
+                            ticks: { color: '#888' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Generate Recommendations list
+            generateRecommendations();
+        });
+
+        // Dynamic checklist compiler
+        function generateRecommendations() {
+            const container = document.getElementById('recommendations-accordion');
+            const items = [];
+
+            // SEC CRITICALS
+            {% if not sec_report.https_active %}
+                items.push({
+                    urgency: 'critical',
+                    title: 'Force SSL/HTTPS Encryption Redirection',
+                    desc: 'The website operates over plain HTTP. Insecure connections allow interception and traffic alterations.',
+                    fix: 'Configure a 301 redirect on server configurations (Nginx/Apache/.htaccess) forcing all HTTP requests to reload securely under HTTPS.'
+                });
+            {% endif %}
+            
+            {% if sec_report.ssl_details and not sec_report.ssl_details.valid %}
+                items.push({
+                    urgency: 'critical',
+                    title: 'Install Valid SSL/TLS Certificate',
+                    desc: 'Browser client handshakes currently fail due to missing or invalid SSL configurations.',
+                    fix: 'Generate an SSL certificate via Let\'s Encrypt or your certificate authority, bind it to port 443, and configure secure virtual host properties.'
+                });
+            {% endif %}
+
+            {% if sec_report.exposed_files %}
+                {% for f in sec_report.exposed_files %}
+                    items.push({
+                        urgency: 'critical',
+                        title: 'Restrict Access to Sensitive File: ' + '{{ f.file }}',
+                        desc: 'The backup or environment variable file `{{ f.file }}` was successfully read (returned HTTP 200 OK). This contains critical secret keys/database passwords.',
+                        fix: 'Configure access rules on your server to reject requests to `{{ f.file }}` returning 403/404. Add `{{ f.file }}` to your `.gitignore` and deployment blocklist.'
+                    });
+                {% endfor %}
+            {% endif %}
+
+            // SEO CRITICALS
+            {% if seo_report.headings.counts.h1 == 0 %}
+                items.push({
+                    urgency: 'critical',
+                    title: 'Add a Singular Heading H1 Tag',
+                    desc: 'The webpage has zero H1 tags. Search bots need H1 tags to determine the topic signature of your page.',
+                    fix: 'Wrap your main title keyword content in a single `<h1>` tag within the `<body>` markup. Do not use multiple H1s.'
+                });
+            {% endif %}
+
+            // WARNINGS (Security)
+            {% if not sec_report.headers_found['Strict-Transport-Security'] %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Enable HTTP Strict Transport Security (HSTS)',
+                    desc: 'HSTS header instructs browsers to strictly communicate via HTTPS, protecting users against SSL strip attacks.',
+                    fix: 'Add the response header: `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` to your server config.'
+                });
+            {% endif %}
+
+            {% if not sec_report.headers_found['Content-Security-Policy'] %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Configure Content-Security-Policy (CSP)',
+                    desc: 'Without a CSP header, the site is vulnerable to cross-site scripting (XSS) script injections.',
+                    fix: 'Add a CSP header detailing trust origins. E.g., `Content-Security-Policy: default-src \'self\'; script-src \'self\' https://cdn.jsdelivr.net`.'
+                });
+            {% endif %}
+
+            {% if not sec_report.headers_found['X-Frame-Options'] %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Set X-Frame-Options to Defend Clickjacking',
+                    desc: 'Absence of this header allows framing of your pages in external sites, enabling overlay clickjacking exploits.',
+                    fix: 'Add response header: `X-Frame-Options: SAMEORIGIN` or `DENY`.'
+                });
+            {% endif %}
+
+            {% if not sec_report.headers_found['X-Content-Type-Options'] %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Set X-Content-Type-Options header',
+                    desc: 'Defends against MIME type sniffing, forcing browser to follow content-type headers explicitly.',
+                    fix: 'Add response header: `X-Content-Type-Options: nosniff`.'
+                });
+            {% endif %}
+
+            {% if sec_report.server_info.disclosed %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Obfuscate Web Server Headers Signature',
+                    desc: 'The headers reveal specific hosting versions/tech stacks (`Server` / `X-Powered-By`). This helps attackers target version-specific vulnerabilities.',
+                    fix: 'Configure `ServerTokens ProductOnly` (Apache) or `server_tokens off;` (Nginx), and strip `X-Powered-By` header in code frameworks.'
+                });
+            {% endif %}
+
+            // WARNINGS (SEO)
+            {% if seo_report.title.status == 'Warning' or not seo_report.title.value %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Optimize Page Title Metadata Length',
+                    desc: 'Your page title is either missing or too long. Ideal titles are between 10 to 60 characters for indexing grids.',
+                    fix: 'Update the HTML `<title>` tag content to be a clear, keyword-rich statement under 60 characters.'
+                });
+            {% endif %}
+
+            {% if seo_report.meta_description.status == 'Warning' or not seo_report.meta_description.value %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Update Meta Description Tag length',
+                    desc: 'Meta description description tag is missing or exceeds optimal boundaries (Ideal: 50-160 characters).',
+                    fix: 'Add/edit `<meta name="description" content="...">` containing a concise CTA and target keywords under 160 characters.'
+                });
+            {% endif %}
+
+            {% if seo_report.images.missing_alt > 0 %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Provide Missing ALT Text for Images',
+                    desc: 'Found {{ seo_report.images.missing_alt }} images lacking alternative description text. This impacts accessibility readers and image SEO.',
+                    fix: 'Scan image markup (see the list in the SEO tab) and add meaningful descriptions using the `alt="..."` attribute.'
+                });
+            {% endif %}
+
+            {% if seo_report.headings.counts.h1 > 1 %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Reduce H1 Headings to a Singular Instance',
+                    desc: 'Page outline utilizes multiple H1 headers. This dilutes the page topic weight for search engine indexes.',
+                    fix: 'Retain only the main title header as H1, and demote secondary H1 tags to H2 or H3 structures.'
+                });
+            {% endif %}
+
+            {% if seo_report.performance_metrics.word_count < 300 %}
+                items.push({
+                    urgency: 'warning',
+                    title: 'Expand Thin Page Content',
+                    desc: 'Your text word count is under 300 words. Search bots favor rich, deep content answering user intents.',
+                    fix: 'Expand the landing content with detailed summaries, subtopics, answers, or frequently asked queries.'
+                });
+            {% endif %}
+
+            // PASSED AUDITS
+            {% if sec_report.https_active and sec_report.ssl_details.valid %}
+                items.push({
+                    urgency: 'passed',
+                    title: 'Enforced Connections Security',
+                    desc: 'The site successfully redirects all traffic through an active, valid SSL certificate.'
+                });
+            {% endif %}
+            
+            {% if not sec_report.exposed_files %}
+                items.push({
+                    urgency: 'passed',
+                    title: 'Exposed Configuration Files Protected',
+                    desc: 'Public queries to sensitive files (.env, .git, config backups) are properly blocked.'
+                });
+            {% endif %}
+
+            {% if seo_report.viewport_exists %}
+                items.push({
+                    urgency: 'passed',
+                    title: 'Mobile Responsive Configuration Check',
+                    desc: 'Page contains a responsive `<meta name="viewport">` definition ensuring mobile rendering support.'
+                });
+            {% endif %}
+
+            {% if seo_report.files.robots_exists %}
+                items.push({
+                    urgency: 'passed',
+                    title: 'Robots.txt Crawlability Mapping',
+                    desc: 'Robots.txt exists and is accessible to search engine crawlers.'
+                });
+            {% endif %}
+
+            if(items.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--pass-color);"><i class="fa-regular fa-circle-check" style="font-size:2.5rem; margin-bottom:12px; display:block;"></i> Highly optimized system! Zero recommendations required.</div>';
+                return;
+            }
+
+            // Render Accordion
+            items.forEach((item, idx) => {
+                let badgeClass = 'badge-pass';
+                let icon = '<i class="fa-solid fa-circle-check" style="color:var(--pass-color)"></i>';
+                
+                if (item.urgency === 'critical') {
+                    badgeClass = 'badge-fail';
+                    icon = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--fail-color)"></i>';
+                } else if (item.urgency === 'warning') {
+                    badgeClass = 'badge-warn';
+                    icon = '<i class="fa-solid fa-circle-exclamation" style="color:var(--warn-color)"></i>';
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'checklist-item';
+
+                itemDiv.innerHTML = `
+                    <div class="checklist-header" onclick="toggleAccordion(this)">
+                        <div class="checklist-title-area">
+                            <span class="checklist-icon">${icon}</span>
+                            <span>${item.title}</span>
+                        </div>
+                        <span class="badge ${badgeClass}">${item.urgency}</span>
+                    </div>
+                    ${item.fix ? `
+                    <div class="checklist-body">
+                        <h5>Description Findings</h5>
+                        <p>${item.desc}</p>
+                        <h5 style="margin-top:15px;">Suggested Resolution Guide</h5>
+                        <p style="color:var(--cyan-neon); font-weight:600;">${item.fix}</p>
+                    </div>` : ''}
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function toggleAccordion(header) {
+            const body = header.nextElementSibling;
+            if(!body) return; // for passed audits with no fix instructions
+            
+            const isVisible = body.style.display === 'block';
+            
+            // Close all
+            document.querySelectorAll('.checklist-body').forEach(b => b.style.display = 'none');
+            
+            // Open current
+            body.style.display = isVisible ? 'none' : 'block';
+        }
+    </script>
+    {% endif %}
+</body>
+</html>

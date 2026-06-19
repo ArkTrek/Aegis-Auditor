@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service | Site Auditor</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #030303;
+            --card-bg: rgba(10, 10, 12, 0.7);
+            --border-color: rgba(6, 182, 212, 0.2);
+            --border-hover: rgba(6, 182, 212, 0.6);
+            --cyan-neon: #06b6d4;
+            --purple-neon: #a855f7;
+            --text-main: #ededed;
+            --text-muted: #888888;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .layout-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Top Navbar */
+        .top-navbar {
+            background: rgba(5, 5, 7, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan-neon), var(--purple-neon));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+
+        .logo-text p {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--cyan-neon);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Outfit', sans-serif;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-3px);
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 800px;
+            width: 100%;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--cyan-neon), var(--purple-neon));
+        }
+
+        .tagline {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--cyan-neon);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
+        }
+
+        p {
+            font-size: 1rem;
+            color: #d1d1d1;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 25px;
+            color: #d1d1d1;
+            line-height: 1.7;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* Footer styling */
+        footer {
+            background: rgba(5, 5, 7, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 60px 40px 40px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media(max-width: 768px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        .footer-col-about h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-col-about p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .developer-bio {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.02);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .developer-avatar-wrapper {
+            flex-shrink: 0;
+        }
+
+        .developer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid var(--cyan-neon);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+
+        .developer-info h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .developer-info p {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan-neon);
+            margin: 2px 0 0 0;
+        }
+
+        .footer-col-links h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        .footer-links-list {
+            list-style: none;
+        }
+
+        .footer-links-list li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links-list a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links-list a:hover {
+            color: var(--cyan-neon);
+            transform: translateX(4px);
+        }
+
+        .architectures-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .arch-card {
+            display: block;
+            text-decoration: none;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: all 0.3s ease;
+        }
+
+        .arch-card:hover {
+            border-color: var(--cyan-neon);
+            background: rgba(6, 182, 212, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .arch-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .arch-title i {
+            font-size: 0.75rem;
+            color: var(--cyan-neon);
+        }
+
+        .arch-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-copyright {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .footer-social-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-social-icons a {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .footer-social-icons a:hover {
+            background: var(--cyan-neon);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="layout-container">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <a href="/" class="logo-section">
+                <div class="logo-mark">A</div>
+                <div class="logo-text">
+                    <h1>Site Auditor</h1>
+                    <p>Security & SEO Engine</p>
+                </div>
+            </a>
+            <a href="/" class="btn-back"><i class="fa-solid fa-house"></i> Home</a>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div class="panel">
+                <div class="tagline">// Policies</div>
+                <h2>Terms of Service</h2>
+                
+                <p>Last updated: June 18, 2026</p>
+                
+                <p>Please review these Terms of Service ("Terms") carefully before using the Site Auditor tool (the "Service") operated by Arpit Ramesan. Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.</p>
+                
+                <h3>1. Scope of Service</h3>
+                <p>Site Auditor is a developer utility that extracts public meta tags, heading structures, page sizes, and standard HTTP headers to calculate dynamic SEO and security checklists. The assessments generated are for general guidance and do not guarantee indexing rank improvements or bulletproof cybersecurity protection.</p>
+
+                <h3>2. Acceptable Use Policy</h3>
+                <p>You agree to only perform scans on domains you own, administer, or have express permission to query. You must not use the Service to spam or conduct heavy-duty denial of service (DoS) attempts against target domains. High-frequency automated script calls to our backend scan engine are prohibited.</p>
+
+                <h3>3. Intellectual Property Rights</h3>
+                <p>The code architecture, layout assets, animations, and branding elements are the exclusive intellectual property of Arpit Ramesan. You are permitted to export, print, and share the generated PDF audit reports for personal or business optimization purposes.</p>
+
+                <h3>4. Limitation of Liability</h3>
+                <p>In no event shall Arpit Ramesan be liable for any direct, indirect, special, consequential, or punitive damages arising from site outages, domain suspensions, or search result listings related to audits conducted through this Service.</p>
+
+                <h3>5. Modification of Terms</h3>
+                <p>We reserve the right to revise or replace these Terms at any time. Updates will be posted directly to this URL.</p>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-grid">
+                <div class="footer-col-about">
+                    <h3>About The Engineer</h3>
+                    <p>Designed and built as a professional security-SEO hybrid suite by Arpit Ramesan. Combining Generative AI systems integration and backend design.</p>
+                    
+                    <div class="developer-bio">
+                        <div class="developer-avatar-wrapper">
+                            <div class="developer-avatar" style="background: linear-gradient(135deg, var(--cyan-neon), var(--purple-neon)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.2rem;">AR</div>
+                        </div>
+                        <div class="developer-info">
+                            <h4>Arpit Ramesan</h4>
+                            <p>AI Generalist & Orchestrator</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-col-links">
+                    <h3>Systems & Archives</h3>
+                    <ul class="footer-links-list">
+                        <li><a href="https://arpitramesansportfolio.pythonanywhere.com/" target="_blank"><i class="fa-solid fa-user-tie"></i> Developer Portfolio</a></li>
+                        <li><a href="https://github.com/arktrek" target="_blank"><i class="fa-brands fa-github"></i> GitHub Profile</a></li>
+                        <li><a href="https://www.linkedin.com/in/arpitramesan" target="_blank"><i class="fa-brands fa-linkedin"></i> LinkedIn Network</a></li>
+                        <li><a href="/privacy"><i class="fa-solid fa-user-lock"></i> Privacy Policy</a></li>
+                        <li><a href="/terms"><i class="fa-solid fa-file-invoice"></i> Terms of Service</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col-links">
+                    <h3>Other Live Architectures</h3>
+                    <div class="architectures-grid">
+                        <a href="https://armaps.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Geo Maps (Armaps) <i class="fa-solid fa-location-arrow"></i></div>
+                            <div class="arch-desc">Safety-first navigation routing interface.</div>
+                        </a>
+                        <a href="https://pin3pin.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Secure File Transfer <i class="fa-solid fa-share-nodes"></i></div>
+                            <div class="arch-desc">Secure P2P file-sharing protocol platform.</div>
+                        </a>
+                        <a href="https://studiobeyond.pythonanywhere.com/" target="_blank" class="arch-card">
+                            <div class="arch-title">Studio Beyond <i class="fa-solid fa-film"></i></div>
+                            <div class="arch-desc">Malayalam anime dubbing project base.</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    &copy; 2026 Arpit Ramesan. All intellectual rights reserved.
+                </div>
+                <div class="footer-social-icons">
+                    <a href="https://github.com/arktrek" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/arpitramesan" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="mailto:arpitramesan777@gmail.com" title="Email"><i class="fa-solid fa-envelope"></i></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JS Particle System -->
+    <script>
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const maxParticles = 40;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.3;
+                this.radius = Math.random() * 2 + 0.5;
+                this.alpha = Math.random() * 0.4 + 0.1;
+                this.color = Math.random() > 0.5 ? '#06b6d4' : '#a855f7';
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.vx = -this.vx;
+                if (this.y < 0 || this.y > height) this.vy = -this.vy;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.alpha;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < maxParticles; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(6, 182, 212, ${0.1 * (1 - dist/150)})`;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
