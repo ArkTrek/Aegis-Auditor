@@ -75,7 +75,7 @@ Navigate to `http://127.0.0.1:5000` in your web browser. Enter any target URL (e
 │   └── seo_scanner.py     # Logic for DOM parsing, metadata, and crawlability
 └── templates/
     ├── index.html         # Main search UI and canvas background
-    ├── results.html       # Report dashboard and Chart.js integration[cite: 14]
+    ├── results.html       # Report dashboard and Chart.js integration
     ├── privacy.html       # Privacy policy details
     └── terms.html         # Terms of service
 
