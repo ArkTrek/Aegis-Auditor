@@ -40,7 +40,7 @@
 
 1.  **Clone the repository:**
 ```bash
-    git clone [https://github.com/arktrek/aegis-auditor.git](https://github.com/arktrek/aegis-auditor.git)
+    git clone https://github.com/arktrek/aegis-auditor.git
     cd Aegis-Auditor
 ```
 
